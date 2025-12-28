@@ -1,17 +1,10 @@
 import datetime
-from typing import List
+from typing import List, Optional
 
-from sqlalchemy import String, Table, Column, ForeignKey, Date
+from sqlalchemy import String, ForeignKey, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
-
-association_table = Table(
-    "association_table",
-    Base.metadata,
-    Column("author_id", ForeignKey("author.id"), primary_key=True),
-    Column("book_id", ForeignKey("book.id"), primary_key=True),
-)
 
 
 class DBBook(Base):
@@ -23,20 +16,17 @@ class DBBook(Base):
     publication_date: Mapped[datetime.date] = (
         mapped_column(Date(), nullable=True)
     )
-    authors: Mapped[List["DBAuthor"]] = (
-        relationship(secondary=association_table, back_populates="books")
-    )
+    author_id: Mapped[Optional[int]] = mapped_column(ForeignKey("author.id"))
+    author: Mapped["DBAuthor"] = relationship()
 
     def __str__(self):
-        return "bool"
+        return "book"
 
 
 class DBAuthor(Base):
     __tablename__ = "author"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True, unique=True)
-    name: Mapped[str] = mapped_column(String(64))
+    name: Mapped[str] = mapped_column(String(64), unique=True)
     bio: Mapped[str] = mapped_column(nullable=True)
-    books: Mapped[List[DBBook]] = (
-        relationship(secondary=association_table, back_populates="authors")
-    )
+    books: Mapped[List[DBBook]] = relationship()

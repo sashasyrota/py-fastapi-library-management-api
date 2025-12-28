@@ -20,12 +20,10 @@ def get_db() -> Session:
 @app.get("/authors/", response_model=list[schemas.Author], status_code=200)
 def read_authors(
         db: Session = Depends(get_db),
-        ids: str | None = None,
-        page: int = 1
+        skip: int | None = None,
+        limit: int | None = None
 ):
-    if ids:
-        ids = [int(n) for n in ids.split(",")]
-    return crud.get_authors(db, ids=ids, page=page)
+    return crud.get_authors(db, skip=skip, limit=limit)
 
 
 @app.get("/authors/{author_id}", response_model=schemas.Author)
@@ -60,8 +58,13 @@ def delete_author(author_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/books/", response_model=list[schemas.Book])
-def read_books(db: Session = Depends(get_db), page: int = 1):
-    return crud.get_books(db, page=page)
+def read_books(
+        db: Session = Depends(get_db),
+        author_id: int | None = None,
+        skip: int | None = None,
+        limit: int | None = None
+):
+    return crud.get_books(db, author_id=author_id, skip=skip, limit=limit)
 
 
 @app.get("/books/{book_id}", response_model=schemas.Book)
@@ -70,7 +73,7 @@ def read_book(book_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/books/", response_model=schemas.Book)
-def create_books(
+def create_book(
         book_schema: schemas.BookCreate,
         db: Session = Depends(get_db)
 ):

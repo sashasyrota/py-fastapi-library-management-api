@@ -10,17 +10,17 @@ class BookBase(BaseModel):
 
 
 class BookCreate(BookBase):
-    authors_id: list[int]
+    author_id: int
 
 
 class BookUpdate(BookBase):
-    authors_id: list[int]
+    author_id: int
 
 
 class Book(BookBase):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    authors: list["AuthorName"]
+    author: "AuthorName"
 
 
 class BookName(BaseModel):
@@ -37,11 +37,11 @@ class AuthorBase(BaseModel):
 
 
 class AuthorCreate(AuthorBase):
-    books_id: list[int]
+    pass
 
 
 class AuthorUpdate(AuthorBase):
-    books_id: list[int]
+    pass
 
 
 class Author(AuthorBase):

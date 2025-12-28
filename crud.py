@@ -3,31 +3,18 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 import schemas
-from database import Base
 from models import DBAuthor, DBBook
-
-
-def get_objects_from_db_by_id(
-        db: Session,
-        ids: list[int],
-        db_model: Base.metadata
-):
-    stmt = select(db_model).where(db_model.id.in_(ids))
-    return db.scalars(stmt).all()
 
 
 def get_authors(
         db: Session,
-        ids: list[int] | None,
-        page: int
+        skip: int | None,
+        limit: int | None
 ):
-    authors_on_page = 2
-    if ids:
-        return get_objects_from_db_by_id(db=db, ids=ids, db_model=DBAuthor)
 
     return (db.query(DBAuthor)
-            .limit(authors_on_page)
-            .offset((page - 1) * authors_on_page)
+            .limit(limit)
+            .offset(skip)
             .all())
 
 
@@ -46,12 +33,6 @@ def create_author(
         name=author_schema.name,
         bio=author_schema.bio,
     )
-    books = get_objects_from_db_by_id(
-        db=db,
-        ids=author_schema.books_id,
-        db_model=DBBook
-    )
-    author_db.books.extend(books)
     db.add(author_db)
     db.commit()
     db.refresh(author_db)
@@ -68,14 +49,6 @@ def update_author(
         raise HTTPException(status_code=404, detail="Author not found")
     author_db.name = author_schema.name
     author_db.bio = author_schema.bio
-    author_db.books = []
-    books = (
-        get_objects_from_db_by_id(
-            db=db,
-            ids=author_schema.books_id,
-            db_model=DBBook)
-    )
-    author_db.books.extend(books)
 
     db.commit()
     return author_db
@@ -93,11 +66,22 @@ def delete_author(
     return {"ok": True}
 
 
-def get_books(db: Session, page: int):
-    books_on_page = 2
+def get_books(
+        db: Session,
+        author_id: int | None,
+        skip: int | None,
+        limit: int | None
+):
+    if author_id:
+        return (
+            db.scalars(
+                select(DBBook).where(DBBook.author_id == author_id)
+            ).all()
+        )
+
     return (db.query(DBBook).
-            limit(books_on_page).
-            offset((page - 1) * books_on_page).all())
+            limit(limit).
+            offset(skip).all())
 
 
 def create_book(
@@ -107,10 +91,9 @@ def create_book(
     db_book = DBBook(
         title=book_schema.title,
         summary=book_schema.summary,
-        publication_date=book_schema.publication_date
+        publication_date=book_schema.publication_date,
+        author_id=book_schema.author_id
     )
-    authors = get_objects_from_db_by_id(db, book_schema.authors_id, DBAuthor)
-    db_book.authors.extend(authors)
     db.add(db_book)
     db.commit()
     db.refresh(db_book)
@@ -131,10 +114,9 @@ def update_book(book_id, book_schema, db):
     book_db.title = book_schema.title
     book_db.summary = book_schema.summary
     book_db.publication_date = book_schema.publication_date
-    authors = get_objects_from_db_by_id(db, book_schema.authors_id, DBAuthor)
-    book_db.authors = []
-    book_db.authors.extend(authors)
+    book_db.author_id = book_schema.author_id
     db.commit()
+    db.refresh(book_db)
     return book_db
 
 
