@@ -74,11 +74,13 @@ def get_books(
 ):
     if author_id:
         return (
-            db.scalars(
-                select(DBBook).where(DBBook.author_id == author_id)
-            ).all()
+            db.execute(
+                select(DBBook)
+                .limit(limit)
+                .offset(skip)
+                .where(DBBook.author_id == author_id)
+            ).scalars().all()
         )
-
     return (db.query(DBBook).
             limit(limit).
             offset(skip).all())
